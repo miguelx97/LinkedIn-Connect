@@ -17,7 +17,7 @@
     DELAY_SHORT: 200,
     DELAY_LONG: 2000,
     LIMIT_SCROLL: 8,
-    LIMIT_CONNECTIONS: 10,
+    LIMIT_CONNECTIONS: 16,
     MUTUAL_CONNECTION_THRESHOLD: 20,
     COLORS: {
       success: "#09ff00",
@@ -84,7 +84,7 @@
     scrollChildEl.insertAdjacentHTML(
       "afterbegin",
       `<p style="text-align: center; font-size: 14px; margin: 4px;">
-         Connection Requests: <span id="connectionRequests">0</span>
+         Connection Requests: <span id="connectionRequests">0</span><span id="finishMsg"></span>
        </p>`
     );
     const scrollContainer = scrollChildEl.parentElement;
@@ -143,14 +143,14 @@
       if (wannaConnect) {
         const btnConnect = container.querySelector(CONFIG.SELECTORS.btnConnect);
         if (!btnConnect) continue;
-        // Uncomment the next line to perform the actual connection request
-        // btnConnect.click();
+        btnConnect.click();
         connectionsCount++;
         scrollChildEl.querySelector("#connectionRequests").textContent =
           connectionsCount;
         if (connectionsCount >= CONFIG.LIMIT_CONNECTIONS) break;
       }
     }
+    scrollChildEl.querySelector("#finishMsg").textContent = " · Finished!";
   }
 
   /** Main auto-connect function that coordinates the process */
@@ -172,7 +172,7 @@
       "beforeend",
       `<li style="margin-left:auto;">
           <a id="auto-connect" class="minvu03 cnutht0 _139m7k7f h8e4ml0 _1xoe5hd0 _139m7k19r _139m7k1a1 _139m7k19w _1mamebb1 cnuthtb4 cnutht1i0 _1s9oaxgi _1pylls4i _1pylls4m _1ptbkx61fc minvu04 _1k2lxme13k _1k2lxme17c _1k2lxmevk _1k2lxmezc cnuthtig cnutht180">
-            <span class="_12p2gmq9 _1s9oaxg7 _12p2gmqk _29kmc3a _29kmc3b _29kmc3g _29kmc3l _1s9oaxg6 _139m7k1gx _1s9oaxgn">Auto Connect</span>
+            <span class="_12p2gmq9 _1s9oaxg7 _12p2gmqk _29kmc3a _29kmc3b _29kmc3g _29kmc3l _1s9oaxg6 _139m7k1gx _1s9oaxgn" style="color:#0a66c2;">Auto Connect</span>
             </span>
           </a>
       </li>`
