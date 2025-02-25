@@ -17,8 +17,9 @@ This Tampermonkey script automates the process of sending connection requests on
 1. Install the [Tampermonkey extension](https://www.tampermonkey.net/) for your browser.
 2. Click the Tampermonkey icon and select "Create a new script".
 3. Delete the default template and paste the script.
-4. Save the script and enable it.
-5. Open [LinkedIn My Network](https://www.linkedin.com/mynetwork/) and click the "Auto Connect" button.
+4. Make sure CONFIG.DEV_MODE is set to false
+5. Save the script and enable it.
+6. Open [LinkedIn My Network](https://www.linkedin.com/mynetwork/) and click the "Auto Connect" button.
 
 ## Usage
 

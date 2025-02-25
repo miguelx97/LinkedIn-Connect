@@ -14,6 +14,7 @@
 
   /** Configuration constants and selectors */
   const CONFIG = {
+    DEV_MODE: false,
     DELAY_SHORT: 200,
     DELAY_LONG: 2000,
     LIMIT_SCROLL: 8,
@@ -88,7 +89,10 @@
        </p>`
     );
     const scrollContainer = scrollChildEl.parentElement;
-    for (let i = 0; i < CONFIG.LIMIT_SCROLL; i++) {
+    const limitScroll = CONFIG.DEV_MODE
+      ? CONFIG.LIMIT_SCROLL / 2
+      : CONFIG.LIMIT_SCROLL;
+    for (let i = 0; i < limitScroll; i++) {
       if (i > 0) await delay(CONFIG.DELAY_LONG);
       scrollContainer.scrollTo({
         top: scrollContainer.scrollHeight,
@@ -143,7 +147,7 @@
       if (wannaConnect) {
         const btnConnect = container.querySelector(CONFIG.SELECTORS.btnConnect);
         if (!btnConnect) continue;
-        btnConnect.click();
+        if (!CONFIG.DEV_MODE) btnConnect.click();
         connectionsCount++;
         scrollChildEl.querySelector("#connectionRequests").textContent =
           connectionsCount;
