@@ -12,118 +12,183 @@
 (function () {
   "use strict";
 
-  // INIT
+  /** Configuration constants and selectors */
+  const CONFIG = {
+    DELAY_SHORT: 200,
+    DELAY_LONG: 2000,
+    LIMIT_SCROLL: 8,
+    LIMIT_CONNECTIONS: 10,
+    MUTUAL_CONNECTION_THRESHOLD: 20,
+    COLORS: {
+      success: "#09ff00",
+      danger: "#f2d8d8",
+    },
+    SELECTORS: {
+      btnShowMore: '[data-view-name="cohort-section-see-all"]',
+      scrollChild:
+        '[data-sdui-screen="com.linkedin.sdui.flagshipnav.mynetwork.CohortSeeAll"]',
+      listUsers:
+        "div._1a8ay891.cnuthtbc.cnuthtj4._1a8ay893._1a8ay895._1a8ay89a.cnuthtew._1k2lxmew0._1k2lxmezs._1k2lxme13k._1k2lxme17c._139m7k23",
+      userItem: "div.cnuthtaw",
+      userContainer: '[role="listitem"]',
+      mutualConnectionMsg:
+        "p._12p2gmq9._12p2gmq2._12p2gmqi._29kmc32._29kmc33._29kmc38._29kmc3d._1lu65cq3._1lu65cq1._1xoe5hd3._1s9oaxgo._1ptbkx6c8._1s9oaxg5._1s9oaxgc._139m7k1fr._1s9oaxgn",
+      btnConnect:
+        "button.yyosfl1.h8e4ml0._1xoe5hd0._139m7k1gx._1s9oaxg7._1s9oaxgi.yyosfl4.yyosfl3.cnuthtc0.cnutht0.cnutht1i0._1k2lxmew._1ptbkx61go",
+      topBar: "main ul.cnuthtb4.cnuthte8.cnuthth4.cnuththk",
+    },
+  };
+
+  /** Utility function for delaying execution */
   const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
-  async function startAutoConnect() {
-    // Open all connections
-    const btnShowMore = document.querySelector(
-      '[data-view-name="cohort-section-see-all"]'
-    );
-    if (!btnShowMore) {
-      throw new Error("Button not found");
-    }
-    btnShowMore.click();
-    await delay(2000);
+  /**
+   * Waits for an element to appear in the DOM.
+   * @param {string} selector - The CSS selector to wait for.
+   * @param {HTMLElement} [container=document] - The container element.
+   * @param {number} [timeout=10000] - Timeout in milliseconds.
+   * @returns {Promise<HTMLElement>}
+   */
+  async function waitForElement(
+    selector,
+    container = document,
+    timeout = 10000
+  ) {
+    const start = Date.now();
+    return new Promise((resolve, reject) => {
+      (function check() {
+        const el = container.querySelector(selector);
+        if (el) {
+          return resolve(el);
+        }
+        if (Date.now() - start > timeout) {
+          return reject(
+            new Error(`Element ${selector} not found within timeout`)
+          );
+        }
+        requestAnimationFrame(check);
+      })();
+    });
+  }
 
-    // Scroll to open more users
-    const scrollChildEl = document.querySelector(
-      '[data-sdui-screen="com.linkedin.sdui.flagshipnav.mynetwork.CohortSeeAll"]'
-    );
-    if (!scrollChildEl) {
-      throw new Error("Scroll element not found");
-    }
+  /** Opens the "See all" connections modal */
+  async function openConnectionsModal() {
+    const btnShowMore = await waitForElement(CONFIG.SELECTORS.btnShowMore);
+    btnShowMore.click();
+  }
+
+  /** Scrolls the modal to load more user items and inserts a counter UI */
+  async function scrollToLoadUsers() {
+    const scrollChildEl = await waitForElement(CONFIG.SELECTORS.scrollChild);
+    // Insert connection counter UI
     scrollChildEl.insertAdjacentHTML(
       "afterbegin",
-      `<p style="text-align: center; font-size: 14px; margin: 4px;">Peticiones de contacto <span id="connectionRequests">0</span></p>`
+      `<p style="text-align: center; font-size: 14px; margin: 4px;">
+         Connection Requests: <span id="connectionRequests">0</span>
+       </p>`
     );
-
-    const scrollEl = scrollChildEl.parentElement;
-    console.log(scrollEl);
-
-    const limitScroll = 8;
-    for (let i = 0; i < limitScroll; i++) {
-      if (i > 0) await delay(2000);
-      scrollEl.scrollTo({ top: scrollEl.scrollHeight, behavior: "smooth" });
+    const scrollContainer = scrollChildEl.parentElement;
+    for (let i = 0; i < CONFIG.LIMIT_SCROLL; i++) {
+      if (i > 0) await delay(CONFIG.DELAY_LONG);
+      scrollContainer.scrollTo({
+        top: scrollContainer.scrollHeight,
+        behavior: "smooth",
+      });
     }
+    // Scroll back to the top
+    scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
+    return scrollChildEl;
+  }
 
-    scrollEl.scrollTo({ top: 0, behavior: "smooth" });
-
-    // Get all users
+  /** Processes the list of users, marking those that meet the criteria and triggering connection */
+  async function processConnections(scrollChildEl) {
     const listUsersElement = scrollChildEl.querySelector(
-      "div._1a8ay891.cnuthtbc.cnuthtj4._1a8ay893._1a8ay895._1a8ay89a.cnuthtew._1k2lxmew0._1k2lxmezs._1k2lxme13k._1k2lxme17c._139m7k23"
+      CONFIG.SELECTORS.listUsers
     );
-
     if (!listUsersElement) {
       throw new Error("List users element not found");
     }
-
-    const usersEl = listUsersElement.querySelectorAll("div.cnuthtaw");
-
+    const users = listUsersElement.querySelectorAll(CONFIG.SELECTORS.userItem);
     let connectionsCount = 0;
-    const limitConnections = 10;
-    for (let i = 0; i < usersEl.length; i++) {
-      const userEl = usersEl[i].querySelector('[role="listitem"]');
-      if (!userEl) continue;
-      const msg = userEl.querySelector(
-        "p._12p2gmq9._12p2gmq2._12p2gmqi._29kmc32._29kmc33._29kmc38._29kmc3d._1lu65cq3._1lu65cq1._1xoe5hd3._1s9oaxgo._1ptbkx6c8._1s9oaxg5._1s9oaxgc._139m7k1fr._1s9oaxgn"
+    for (const userEl of users) {
+      const container = userEl.querySelector(CONFIG.SELECTORS.userContainer);
+      if (!container) continue;
+
+      const msgEl = container.querySelector(
+        CONFIG.SELECTORS.mutualConnectionMsg
       );
-      if (!msg) continue;
+      if (!msgEl) continue;
+
       const regex = /and\s+(\d+)\s+other mutual connection(?:s)?/;
-      const match = msg.textContent.match(regex);
+      const match = msgEl.textContent.match(regex);
       const numMutualConnections = match ? parseInt(match[1], 10) : 0;
 
-      const success = "#09ff00",
-        danger = "#f2d8d8";
-
-      const numMutualConnToConnect = 20;
-      let color = danger,
-        border = 2;
-
-      const wannaConnect = numMutualConnections > numMutualConnToConnect;
+      // Determine the styling based on the number of mutual connections
+      const { success, danger } = CONFIG.COLORS;
+      let color = danger;
+      let border = 2;
+      const wannaConnect =
+        numMutualConnections > CONFIG.MUTUAL_CONNECTION_THRESHOLD;
       if (wannaConnect) {
         color = success;
-        border = (numMutualConnections / numMutualConnToConnect) * 2;
-        if (border > 6) border = 6;
-      }
-
-      userEl.style.border = `solid ${border}px ${color}`;
-      await delay("200");
-
-      if (wannaConnect) {
-        const btnConnect = userEl.querySelector(
-          "button.yyosfl1.h8e4ml0._1xoe5hd0._139m7k1gx._1s9oaxg7._1s9oaxgi.yyosfl4.yyosfl3.cnuthtc0.cnutht0.cnutht1i0._1k2lxmew._1ptbkx61go"
+        border = Math.min(
+          (numMutualConnections / CONFIG.MUTUAL_CONNECTION_THRESHOLD) * 2,
+          6
         );
+      }
+      container.style.border = `solid ${border}px ${color}`;
+      await delay(CONFIG.DELAY_SHORT);
+
+      // If the criteria are met, click the Connect button
+      if (wannaConnect) {
+        const btnConnect = container.querySelector(CONFIG.SELECTORS.btnConnect);
         if (!btnConnect) continue;
+        // Uncomment the next line to perform the actual connection request
         // btnConnect.click();
         connectionsCount++;
         scrollChildEl.querySelector("#connectionRequests").textContent =
           connectionsCount;
-        if (connectionsCount >= limitConnections) {
-          break;
-        }
+        if (connectionsCount >= CONFIG.LIMIT_CONNECTIONS) break;
       }
     }
   }
 
-  // Open all connections modal
-  const observer = new MutationObserver(async (mutations, obs) => {
-    const topBar = document.querySelector(
-      "main ul.cnuthtb4.cnuthte8.cnuthth4.cnuththk"
-    );
+  /** Main auto-connect function that coordinates the process */
+  async function startAutoConnect() {
+    try {
+      await openConnectionsModal();
+      const scrollChildEl = await scrollToLoadUsers();
+      await processConnections(scrollChildEl);
+    } catch (error) {
+      console.error("Error in auto connect:", error);
+    }
+  }
+
+  /** Inserts the "Auto Connect" button into the page's top bar */
+  function addAutoConnectButton() {
+    const topBar = document.querySelector(CONFIG.SELECTORS.topBar);
+    if (!topBar) return;
     topBar.insertAdjacentHTML(
       "beforeend",
-      `
-        <li style="margin-left:auto;"><a
-            id="auto-connect"
-            class="minvu03 cnutht0 _139m7k7f h8e4ml0 _1xoe5hd0 _139m7k19r _139m7k1a1 _139m7k19w _1mamebb1 cnuthtb4 cnutht1i0 _1s9oaxgi _1pylls4i _1pylls4m _1ptbkx61fc minvu04 _1k2lxme13k _1k2lxme17c _1k2lxmevk _1k2lxmezc cnuthtig cnutht180"><span
-                class="_12p2gmq9 _1s9oaxg7 _12p2gmqk _29kmc3a _29kmc3b _29kmc3g _29kmc3l _1s9oaxg6 _139m7k1gx _1s9oaxgn">Auto Connect</span></span></a></li>`
+      `<li style="margin-left:auto;">
+          <a id="auto-connect" class="minvu03 cnutht0 _139m7k7f h8e4ml0 _1xoe5hd0 _139m7k19r _139m7k1a1 _139m7k19w _1mamebb1 cnuthtb4 cnutht1i0 _1s9oaxgi _1pylls4i _1pylls4m _1ptbkx61fc minvu04 _1k2lxme13k _1k2lxme17c _1k2lxmevk _1k2lxmezc cnuthtig cnutht180">
+            <span class="_12p2gmq9 _1s9oaxg7 _12p2gmqk _29kmc3a _29kmc3b _29kmc3g _29kmc3l _1s9oaxg6 _139m7k1gx _1s9oaxgn">Auto Connect</span>
+            </span>
+          </a>
+      </li>`
     );
-    obs.disconnect();
-
     document
       .getElementById("auto-connect")
       .addEventListener("click", startAutoConnect);
+  }
+
+  /** MutationObserver to wait for the top bar element to be available */
+  const observer = new MutationObserver((mutations, obs) => {
+    const topBar = document.querySelector(CONFIG.SELECTORS.topBar);
+    if (topBar) {
+      addAutoConnectButton();
+      obs.disconnect();
+    }
   });
   observer.observe(document.body, { childList: true, subtree: true });
 })();
