@@ -89,9 +89,7 @@
        </p>`
     );
     const scrollContainer = scrollChildEl.parentElement;
-    const limitScroll = CONFIG.DEV_MODE
-      ? CONFIG.LIMIT_SCROLL / 2
-      : CONFIG.LIMIT_SCROLL;
+    const limitScroll = CONFIG.DEV_MODE ? 2 : CONFIG.LIMIT_SCROLL;
     for (let i = 0; i < limitScroll; i++) {
       if (i > 0) await delay(CONFIG.DELAY_LONG);
       scrollContainer.scrollTo({
@@ -147,11 +145,12 @@
       if (wannaConnect) {
         const btnConnect = container.querySelector(CONFIG.SELECTORS.btnConnect);
         if (!btnConnect) continue;
-        if (!CONFIG.DEV_MODE) btnConnect.click();
+        if (connectionsCount < CONFIG.LIMIT_CONNECTIONS && !CONFIG.DEV_MODE) {
+          btnConnect.click();
+        }
         connectionsCount++;
         scrollChildEl.querySelector("#connectionRequests").textContent =
           connectionsCount;
-        if (connectionsCount >= CONFIG.LIMIT_CONNECTIONS) break;
       }
     }
     scrollChildEl.querySelector("#finishMsg").textContent = " · Finished!";
