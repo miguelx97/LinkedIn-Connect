@@ -147,10 +147,10 @@
         if (!btnConnect) continue;
         if (connectionsCount < CONFIG.LIMIT_CONNECTIONS && !CONFIG.DEV_MODE) {
           btnConnect.click();
+          connectionsCount++;
+          scrollChildEl.querySelector("#connectionRequests").textContent =
+            connectionsCount;
         }
-        connectionsCount++;
-        scrollChildEl.querySelector("#connectionRequests").textContent =
-          connectionsCount;
       }
     }
     scrollChildEl.querySelector("#finishMsg").textContent = " · Finished!";
@@ -168,9 +168,10 @@
   }
 
   /** Inserts the "Auto Connect" button into the page's top bar */
-  function addAutoConnectButton() {
-    const topBar = document.querySelector(CONFIG.SELECTORS.topBar);
+  async function addAutoConnectButton() {
+    const topBar = await waitForElement(CONFIG.SELECTORS.topBar);
     if (!topBar) return;
+    await delay(CONFIG.DELAY_SHORT);
     topBar.insertAdjacentHTML(
       "beforeend",
       `<li style="margin-left:auto;">
@@ -185,13 +186,5 @@
       .addEventListener("click", startAutoConnect);
   }
 
-  /** MutationObserver to wait for the top bar element to be available */
-  const observer = new MutationObserver((mutations, obs) => {
-    const topBar = document.querySelector(CONFIG.SELECTORS.topBar);
-    if (topBar) {
-      addAutoConnectButton();
-      obs.disconnect();
-    }
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
+  addAutoConnectButton();
 })();
