@@ -19,12 +19,12 @@ This Tampermonkey script automates the process of sending connection requests on
 3. Delete the default template and paste the script.
 4. Make sure CONFIG.DEV_MODE is set to false
 5. Save the script and enable it.
-6. Open [LinkedIn My Network](https://www.linkedin.com/mynetwork/) and click the "Auto Connect" button.
+6. Open [LinkedIn My Network](https://www.linkedin.com/mynetwork/grow/) and click the "Auto Connect" button.
 
 ## Usage
 
-1. Navigate to [LinkedIn My Network](https://www.linkedin.com/mynetwork/).
-2. Click the **Auto Connect** button in the top navigation bar.
+1. Navigate to [LinkedIn My Network](https://www.linkedin.com/mynetwork/grow/).
+2. Click the **Auto Connect** button in the top bar (If the button does not appear, refresh the page).
 3. The script will scroll through the page, highlight users, and send connection requests.
 4. The process stops after reaching the defined connection limit.
 
